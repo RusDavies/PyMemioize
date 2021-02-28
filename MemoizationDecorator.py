@@ -3,6 +3,7 @@ import functools
 from RusPyMemoize.CacheBackend import CacheBackend
 
 # TODO: Figure out how to have only one decorator that works for both non-class functions and class methods.
+# TODO: Add a named parameter to each decorator, allowing the 'exists in cache' check to be skipped (force refresh) 
 
 def cache_function(backend: CacheBackend, key=None, maxttl=3600, **kwargs):
     
