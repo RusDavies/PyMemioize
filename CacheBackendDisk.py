@@ -4,6 +4,9 @@ import pickle
 import time
 #import functools
 from PyBlakemere.PyMemoize.CacheBackend import CacheBackend
+from pathlib import Path
+
+# TODO: Convert fully to pathlib. 
 
 #
 # Concrete disk-based cache
@@ -12,12 +15,12 @@ class DiskCacheBackend(CacheBackend):
     '''Concrete disk-based implementation of RusPyMemoization.CacheBackend'''
 
     def __init__(self, cachedir:str='~/.local/tmp/cache/memoization/general', globalmaxttl:int=3600):
-        self._cachedir = cachedir
+        self._cachedir = Path(cachedir)
         self._globalmaxttl = globalmaxttl
 
         # Make sure the cachedir exists
-        self._cachedir = os.path.abspath(os.path.expanduser(self._cachedir))
-        if (not os.path.exists(self._cachedir) ):
+        self._cachedir.expanduser() 
+        if (not self._cachedir.exists() ):
             os.makedirs( cachedir )
 
         # Clean up any stale files as we start up
@@ -32,22 +35,23 @@ class DiskCacheBackend(CacheBackend):
 
     def get(self, key, localttl=-1):
         result = None
-        path = os.path.join(self._cachedir, key)
-        if (os.path.exists( path )):
-            age = time.time() - os.path.getmtime(path)
+        path = self._cachedir / key  
+        if (path.exists()):
+
+            age = time.time() - os.path.getctime(path)
             if ( ( age <= self._globalmaxttl) and (localttl >= 0 and age <= localttl)):
-                os.remove(path)
-            else:
                 with open(path, "rb") as f:
                     result = pickle.load(f)
+            else:
+                path.unlink() 
 
         return result
 
 
     def __contains__(self, key):
         result = False
-        path = os.path.join(self._cachedir, key)
-        if (os.path.exists( path )):
+        path = self._cachedir / key
+        if (path.exists()):
             result = True
         return result
 

@@ -1,7 +1,10 @@
-#import sys
-#import os
 import hashlib
 import json
+import numbers
+
+# TODO: Write a cache backend for in-memory
+# TODO: Write a cache backend for Redis
+# TODO: Write a cache backed for Memcached
 
 #
 # Abstract base class for the caching backend 
@@ -21,17 +24,20 @@ class CacheBackend(object):
 
     @staticmethod
     def hasher(val):
-        result = None
-        
-        # If we have a list (which is unhashable) then cast it to a tuple
         if (isinstance(val, list)):
+            # Lists are unhashable. Convert to tuple
             val = tuple(val)
 
-        # If we have a dictonary, we json.dumps it
-        if (isinstance(val, dict)):
+        elif (isinstance(val, dict)):
+            # dicts are unhashable. Convert to string. 
+            # TODO: json.dumps adds possibly significant overhead. Something more efficient? Perhaps 'frozenset' ?
             val = json.dumps(val)
 
-        return hash(val)
+        elif(isinstance(val, numbers.Number)):
+            # Numbers seem to hash as themselves. Convert to string. 
+            val = str(val)
+
+        return str(hash(val))
     
 
     @staticmethod
@@ -40,14 +46,14 @@ class CacheBackend(object):
         # Hash the args
         hashed_args = []
         for item in args:
-            hashed_args.append( str(CacheBackend.hasher(item)) ) 
+            hashed_args.append( CacheBackend.hasher(item) ) 
+        #hashed_args = CacheBackend.hasher(args)
 
         # Hash the kwargs
-        ## We're seeing lists in the kawgs, which aren't hashable. 
         hashed_kwargs = [] 
         for (key, val) in kwargs.items():
-            hashed_key = str(CacheBackend.hasher(key))
-            hashed_val = str(CacheBackend.hasher(val))          
+            hashed_key = CacheBackend.hasher(key)
+            hashed_val = CacheBackend.hasher(val)          
             hashed_kwargs.append( '{}_{}'.format(hashed_key, hashed_val))
 
         # Rehash to avoid overly large hashes
@@ -55,18 +61,12 @@ class CacheBackend(object):
         
         return hashed_kwargs
 
+
     @staticmethod
     def generate_function_key(fn):
-        raise NotImplementedError
+        if (not callable(fn)):
+            raise Exception('Not a function')
 
-        # FIXME: CacheBackend.generage_function_key(...) doesn't work. For now we're making 'key' a mandatory field in the decorator, to avoid extracting a function key. 
-        # if (type(fn) is 'function'):
-        #     return hashlib.md5(fn.__qualname__).hexdigest()
-        # else:
-        #     raise Exception('Not a function')
+        return hashlib.md5(fn.__qualname__.encode('ascii')).hexdigest()
 
 
-# DONE: Write a cache backend for filesystems. See CacheBackendDisk.py
-# TODO: Write a cache backend for in-memory
-# TODO: Write a cache backend for Redis
-# TODO: Write a cache backed for Memcached

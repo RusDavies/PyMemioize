@@ -1,23 +1,21 @@
 
 import functools
 from PyBlakemere.PyMemoize.CacheBackend import CacheBackend
+import inspect
 
-# TODO: Figure out how to have only one decorator that works for both non-class functions and class methods.
-# TODO: Add a named parameter to each decorator, allowing the 'exists in cache' check to be skipped (force refresh) 
-
-def memoize(backend: CacheBackend, isClassMethod=False, key=None, maxttl=3600, **kwargs):
+def memoize(backend: CacheBackend, maxttl=3600, **kwargs):
     
     '''Decorator to enable a function memoization cache on functions'''
-
-    if (key is None or len(key) == 0):
-        #key = backend.generate_function_key( fn )
-        raise Exception('key must not be None or zero length')
 
     def decorator(fn, set_kwargs=None):
         if (set_kwargs == None):
             set_kwargs = {}
 
-        if (isClassMethod):
+        key = backend.generate_function_key( fn )
+
+        # TODO: Is there a dryer way of expressing the following? All I really want to do
+        #       is change the function signature to include self or not. 
+        if (inspect.ismethod(fn)):
             @functools.wraps(fn)
             def wrapper(self, *args, **kwargs):
                 unique_key = "{}_{}".format(key, backend.generate_unique_key(*args, **kwargs))
@@ -36,22 +34,24 @@ def memoize(backend: CacheBackend, isClassMethod=False, key=None, maxttl=3600, *
 
                 return value
         return wrapper
+        
     return functools.partial(decorator, **kwargs)
     
 
 if __name__ == '__main__':
 
     from PyBlakemere.PyMemoize.CacheBackendDisk import DiskCacheBackend
+    from pathlib import Path
 
-    file_cache = DiskCacheBackend('./.cache_test/')
+    path = Path('./.cache_test/')
 
-    @memoize(file_cache, key='test_', isClassMethod=False, maxttl=3600)
+    @memoize(DiskCacheBackend(path), maxttl=3600)
     def example(a, b, opts=None):
         return (a * b)
 
     result = example(2, 3, opts={'test': 'example'})
+    print(result)
+
     result = example(2, 3, opts={'test': 'example'})
-
-
-
+    print(result)
     
