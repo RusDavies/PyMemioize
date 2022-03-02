@@ -3,7 +3,7 @@ import os
 import pickle 
 import time
 #import functools
-from PyMemoize.CacheBackend import CacheBackend
+from PyBlakemere.PyMemoize.CacheBackend import CacheBackend
 
 #
 # Concrete disk-based cache

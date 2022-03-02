@@ -20,23 +20,35 @@ class CacheBackend(object):
 
 
     @staticmethod
-    def generate_unique_key(*args, **kwargs):
-        hashed_args = ['%s' % hash(arg) for arg in args]
+    def hasher(val):
+        result = None
         
+        # If we have a list (which is unhashable) then cast it to a tuple
+        if (isinstance(val, list)):
+            val = tuple(val)
+
+        # If we have a dictonary, we json.dumps it
+        if (isinstance(val, dict)):
+            val = json.dumps(val)
+
+        return hash(val)
+    
+
+    @staticmethod
+    def generate_unique_key(*args, **kwargs):
+
+        # Hash the args
+        hashed_args = []
+        for item in args:
+            hashed_args.append( str(CacheBackend.hasher(item)) ) 
+
+        # Hash the kwargs
         ## We're seeing lists in the kawgs, which aren't hashable. 
-        # hashed_kwargs = ['%s ' % hash((key, value)) for (key, value) in kwargs.items()]
         hashed_kwargs = [] 
-        for (key, value) in kwargs.items():
-            val = value
-
-            # If we have a list (which is unhashable) then cast it to a tuple
-            if (isinstance(val, list)):
-                val = tuple(val)
-
-            #hashed_val = hash((key, val))            
-            hashed_val = hash(frozenset((key, val)))
-            
-            hashed_kwargs.append( '%s '.format(hashed_val))
+        for (key, val) in kwargs.items():
+            hashed_key = str(CacheBackend.hasher(key))
+            hashed_val = str(CacheBackend.hasher(val))          
+            hashed_kwargs.append( '{}_{}'.format(hashed_key, hashed_val))
 
         # Rehash to avoid overly large hashes
         hashed_kwargs = hashlib.md5(':'.join(hashed_args + hashed_kwargs).encode('utf-8')).hexdigest()         
