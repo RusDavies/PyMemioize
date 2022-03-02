@@ -1,6 +1,7 @@
-import sys
-import os
+#import sys
+#import os
 import hashlib
+import json
 
 #
 # Abstract base class for the caching backend 
@@ -32,7 +33,9 @@ class CacheBackend(object):
             if (isinstance(val, list)):
                 val = tuple(val)
 
-            hashed_val = hash((key, val))
+            #hashed_val = hash((key, val))            
+            hashed_val = hash(frozenset((key, val)))
+            
             hashed_kwargs.append( '%s '.format(hashed_val))
 
         # Rehash to avoid overly large hashes

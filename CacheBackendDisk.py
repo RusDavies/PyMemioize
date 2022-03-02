@@ -1,9 +1,9 @@
-import sys
+#import sys
 import os
 import pickle 
 import time
-import functools
-from RusPyMemoize.CacheBackend import CacheBackend
+#import functools
+from PyMemoize.CacheBackend import CacheBackend
 
 #
 # Concrete disk-based cache

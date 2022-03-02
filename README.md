@@ -1,2 +1,2 @@
-# RusPyMemioize
+# PyMemioize
 Python memoization
