@@ -37,10 +37,12 @@ class DiskCacheBackend(CacheBackend):
         has_result = False
         result = None
         path = self._cachedir / key  
-        if (path.exists()):
 
+        maxttl = localttl if (localttl >= 0) else self._globalmaxttl
+
+        if (path.exists()):
             age = time.time() - os.path.getctime(path)
-            if ( ( age <= self._globalmaxttl) and (localttl >= 0 and age <= localttl)):
+            if ( age <= maxttl ):
                 with open(path, "rb") as f:
                     result = pickle.load(f)
                 has_result = True
