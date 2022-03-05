@@ -19,16 +19,16 @@ def memoize(backend: CacheBackend, maxttl=3600, **kwargs):
             @functools.wraps(fn)
             def wrapper(self, *args, **kwargs):
                 unique_key = "{}_{}".format(key, backend.generate_unique_key(*args, **kwargs))
-                value = backend.get( unique_key, maxttl)
-                if (value is None):
+                (hit, value) = backend.get( unique_key, maxttl)
+                if (not hit): 
                     value = fn(self, *args, **kwargs)
                     backend.set(unique_key, value, **set_kwargs)
         else:
             @functools.wraps(fn)
             def wrapper(*args, **kwargs):
                 unique_key = "{}_{}".format(key, backend.generate_unique_key(*args, **kwargs))
-                value = backend.get( unique_key, maxttl)
-                if (value is None):
+                (hit, value) = backend.get( unique_key, maxttl)
+                if (not hit):  
                     value = fn(*args, **kwargs)
                     backend.set(unique_key, value, **set_kwargs)
 
@@ -36,22 +36,5 @@ def memoize(backend: CacheBackend, maxttl=3600, **kwargs):
         return wrapper
         
     return functools.partial(decorator, **kwargs)
-    
 
-if __name__ == '__main__':
-
-    from PyBlakemere.PyMemoize.CacheBackendDisk import DiskCacheBackend
-    from pathlib import Path
-
-    path = Path('./.cache_test/')
-
-    @memoize(DiskCacheBackend(path), maxttl=3600)
-    def example(a, b, opts=None):
-        return (a * b)
-
-    result = example(2, 3, opts={'test': 'example'})
-    print(result)
-
-    result = example(2, 3, opts={'test': 'example'})
-    print(result)
     

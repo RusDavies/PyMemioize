@@ -34,6 +34,7 @@ class DiskCacheBackend(CacheBackend):
 
 
     def get(self, key, localttl=-1):
+        has_result = False
         result = None
         path = self._cachedir / key  
         if (path.exists()):
@@ -42,10 +43,11 @@ class DiskCacheBackend(CacheBackend):
             if ( ( age <= self._globalmaxttl) and (localttl >= 0 and age <= localttl)):
                 with open(path, "rb") as f:
                     result = pickle.load(f)
+                has_result = True
             else:
                 path.unlink() 
 
-        return result
+        return (has_result, result)
 
 
     def __contains__(self, key):
