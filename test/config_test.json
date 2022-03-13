@@ -1,0 +1,4 @@
+{
+    "cache_encrypt_at_rest":    false,
+    "cache_path":               "./test/MemoizationDecorator/cache/"
+}

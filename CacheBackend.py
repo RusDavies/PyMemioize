@@ -32,23 +32,24 @@ class CacheBackend(object):
         elif (isinstance(val, dict)):
             # dicts are unhashable. Convert to string. 
             # TODO: json.dumps adds possibly significant overhead. Something more efficient? Perhaps 'frozenset' ?
-            val = json.dumps(val)
+            val = json.dumps(val, sort_keys=True)
 
         elif(isinstance(val, numbers.Number)):
             # Numbers seem to hash as themselves. Convert to string. 
             val = str(val)
 
-        return str(hash(val))
+        result = hashlib.md5( val.encode('ascii')).hexdigest()
+
+        return result
     
 
     @staticmethod
     def generate_unique_key(*args, **kwargs):
-
         # Hash the args
         hashed_args = []
-        for item in args:
-            hashed_args.append( CacheBackend.hasher(item) ) 
-        #hashed_args = CacheBackend.hasher(args)
+        if (len(args) > 1):
+            for item in args[1:]:
+                hashed_args.append( CacheBackend.hasher(item) ) 
 
         # Hash the kwargs
         hashed_kwargs = [] 
@@ -58,9 +59,11 @@ class CacheBackend(object):
             hashed_kwargs.append( '{}_{}'.format(hashed_key, hashed_val))
 
         # Rehash to avoid overly large hashes
-        hashed_kwargs = hashlib.md5(':'.join(hashed_args + hashed_kwargs).encode('utf-8')).hexdigest()         
+        result = hashlib.md5(':'.join(hashed_args + hashed_kwargs).encode('ascii')).hexdigest()         
         
-        return hashed_kwargs
+        # print("args[1:]={}, hashed_args={}, result={}".format(args[1:], hashed_args, result))
+
+        return result
 
 
     @staticmethod

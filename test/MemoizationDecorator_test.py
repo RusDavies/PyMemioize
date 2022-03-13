@@ -1,4 +1,4 @@
-from os import unlink
+#from os import unlink
 import unittest
 
 from MemoizationDecorator import memoize
@@ -6,29 +6,45 @@ from CacheBackendDisk import DiskCacheBackend
 from pathlib import Path
 import time
 from datetime import datetime
+import json 
+
+def delete_folder(pth):
+    if (pth.exists()):
+        for sub in pth.iterdir():
+            if (sub.is_dir()):
+                delete_folder(sub)
+            else:
+                sub.unlink()
+        pth.rmdir()
+    return
+
 
 class TestMemoizationDecorator(unittest.TestCase):
-    # Helper function, to make deleting folders easy. 
-    @staticmethod
-    def delete_folder(pth):
-        if (pth.exists()):
-            for sub in pth.iterdir():
-                if (sub.is_dir()):
-                    TestMemoizationDecorator.delete_folder(sub)
-                else:
-                    sub.unlink()
-            pth.rmdir()
-        return
+
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        # Get our test configuration 
+        with open('./test/config_test.json', 'r') as file:
+            tmp = file.read()
+            cls.test_config = json.loads(tmp)
+
+        # Fixup file and path strings into Path objects
+        for item in ['cache_path']:
+            cls.test_config[item]  = Path(cls.test_config[item])
+
+        return super().setUpClass()
+
 
     def setUp(self) -> None:
-        # Ensure we start eah test with a clean cache
-        cache_path = Path('./.cache_test')
-        TestMemoizationDecorator.delete_folder(cache_path)
-        
-        # Create a cache to use
-        self.cache = DiskCacheBackend(cachedir=cache_path)
+        delete_folder(self.test_config['cache_path'])
+        self.cache = DiskCacheBackend(cachedir=self.test_config['cache_path'])
 
-        return
+        return super().setUp()
+
+
+    # =====================
+    # Tests 
 
     #@unittest.skip
     def test_memoize_function(self):
@@ -55,7 +71,7 @@ class TestMemoizationDecorator(unittest.TestCase):
 
         # Define a class with a class method using the memoize decorator
         class example_class: 
-            @memoize(backend=self.cache)
+            @memoize(backend=self.cache, is_class_method=True)
             def example(self, a, b):
                 return a * b
 
@@ -95,7 +111,7 @@ class TestMemoizationDecorator(unittest.TestCase):
 
         # Get a memoized timing
         start = datetime.now().timestamp()
-        for i in range(0, 100): 
+        for i in range(0, 10): 
             expensive_memoized(1)
         memoized_time = datetime.now().timestamp() - start
 

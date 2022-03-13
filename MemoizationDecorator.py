@@ -1,6 +1,7 @@
 
 import functools
 from PyBlakemere.PyMemoize.CacheBackend import CacheBackend
+from PyBlakemere.PyMemoize.CacheBackendDiskIndexer import CacheBackendDiskIndexer
 import inspect
 
 def memoize(backend: CacheBackend, maxttl=3600, **kwargs):
@@ -21,18 +22,22 @@ def memoize(backend: CacheBackend, maxttl=3600, **kwargs):
                 unique_key = "{}_{}".format(key, backend.generate_unique_key(*args, **kwargs))
                 (hit, value) = backend.get( unique_key, maxttl)
                 if (not hit): 
-                    value = fn(self, *args, **kwargs)
+                    value = {'fn': fn.__name__, 'args': args, 'kwargs': kwargs}
+                    value['result'] = fn(self, *args, **kwargs)
                     backend.set(unique_key, value, **set_kwargs)
+
+                return value['result']
+
         else:
             @functools.wraps(fn)
             def wrapper(*args, **kwargs):
                 unique_key = "{}_{}".format(key, backend.generate_unique_key(*args, **kwargs))
                 (hit, value) = backend.get( unique_key, maxttl)
                 if (not hit):  
-                    value = fn(*args, **kwargs)
+                    value = {'args': args, 'kwargs': kwargs}
+                    value['result'] = fn(*args, **kwargs)
                     backend.set(unique_key, value, **set_kwargs)
-
-                return value
+                return value['result']
         return wrapper
         
     return functools.partial(decorator, **kwargs)
