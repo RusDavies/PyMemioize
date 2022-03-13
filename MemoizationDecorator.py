@@ -4,7 +4,7 @@ from PyBlakemere.PyMemoize.CacheBackend import CacheBackend
 from PyBlakemere.PyMemoize.CacheBackendDiskIndexer import CacheBackendDiskIndexer
 import inspect
 
-def memoize(backend: CacheBackend, maxttl=3600, **kwargs):
+def memoize(backend: CacheBackend, maxttl=3600, is_class_method=False, **kwargs):
     
     '''Decorator to enable a function memoization cache on functions'''
 
@@ -14,9 +14,11 @@ def memoize(backend: CacheBackend, maxttl=3600, **kwargs):
 
         key = backend.generate_function_key( fn )
 
-        # TODO: Is there a dryer way of expressing the following? All I really want to do
-        #       is change the function signature to include self or not. 
-        if (inspect.ismethod(fn)):
+        # inspect.ismethod() doesn't work to automatically differentation class methods from raw functions
+        # This is because the decorator seems to pass only the raw function without class context. 
+        # For now, working around, by adding a 'is_class_method' argument to the decorator. 
+        #if (inspect.ismethod(fn)):
+        if (is_class_method):
             @functools.wraps(fn)
             def wrapper(self, *args, **kwargs):
                 unique_key = "{}_{}".format(key, backend.generate_unique_key(*args, **kwargs))
